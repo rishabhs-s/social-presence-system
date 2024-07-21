@@ -11,15 +11,37 @@ import (
 	"github.com/rishabhs-s/models"
 )
 
-
-
 func AddFriend(w http.ResponseWriter, r *http.Request) {
-	//TODO:Add check if user is present
 	var req models.FriendRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		slog.Error("Error in decoding body of user " ,err)
+		slog.Error("Error in decoding body of user ", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
+	}
+	var fromUser models.User
+	if err := db.Db.Where("username = ?", req.FromUserName).First(&fromUser).Error; err != nil {
+		slog.Error("From user not found: ", err)
+		http.Error(w, "From user not found", http.StatusNotFound)
+		return
+	}
+
+	// Check if the ToUserName exists
+	var toUser models.User
+	if err := db.Db.Where("username = ?", req.ToUserName).First(&toUser).Error; err != nil {
+		slog.Error("To user not found: ", err)
+		http.Error(w, "To user not found", http.StatusNotFound)
+		return
+	}
+	var existingRequest models.FriendRequest
+	if err := db.Db.Where("(from_user_name = ? AND to_user_name = ?) OR (from_user_name = ? AND to_user_name = ?)",
+		req.FromUserName, req.ToUserName, req.ToUserName, req.FromUserName).First(&existingRequest).Error; err == nil {
+		if existingRequest.Status == "pending" {
+			http.Error(w, "Friend request already sent", http.StatusConflict)
+			return
+		} else if existingRequest.Status == "accepted" {
+			http.Error(w, "Users are already friends", http.StatusConflict)
+			return
+		}
 	}
 
 	req.Status = "pending"
@@ -36,14 +58,14 @@ func AddFriend(w http.ResponseWriter, r *http.Request) {
 func AcceptRejectFriendRequest(w http.ResponseWriter, r *http.Request) {
 	var req models.FriendRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		slog.Error("Error in decoding body of user ",err)
+		slog.Error("Error in decoding body of user ", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	var fr models.FriendRequest
 	if err := db.Db.First(&fr, req.ID).Error; err != nil {
-		slog.Error("No Request with this id found",err)
+		slog.Error("No Request with this id found", err)
 		http.Error(w, "request not found", http.StatusNotFound)
 		return
 	}
@@ -151,7 +173,6 @@ func RemoveFriend(w http.ResponseWriter, r *http.Request) {
 	}
 	slog.Info("friend list Update Success")
 
-
 	json.NewEncoder(w).Encode(map[string]string{"message": "friend removed successfully"})
 
 }
@@ -170,4 +191,3 @@ func ViewFriendList(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(user.Friends)
 }
-
