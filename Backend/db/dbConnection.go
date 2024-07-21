@@ -23,8 +23,8 @@ func InitDb() *gorm.DB {
 func connectToDB() *gorm.DB {
 	var err error
 
-	// host := "postgres-db" //for docker
-	host := "localhost" //local dev
+	host := "postgres-db" //for docker
+	// host := "localhost" //local dev
 	username := "postgres"
 	password := "root"
 	dbname := "supergaming"

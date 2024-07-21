@@ -1,0 +1,36 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backendapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backendapp
+  template:
+    metadata:
+      labels:
+        app: backendapp
+    spec:
+      containers:
+        - name: backendapp
+          image: backendapp:latest  
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DATABASE_URL
+              value: postgres://postgres:root@postgres-db:5432/supergaming?sslmode=disable 
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+spec:
+  selector:
+    app: backendapp
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
