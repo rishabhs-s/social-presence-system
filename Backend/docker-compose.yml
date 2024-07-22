@@ -9,7 +9,7 @@ services:
     depends_on:
       - postgres
     environment:
-      - DATABASE_URL=postgres://postgres:root@postgres:5433/supergaming?sslmode=disable
+      - DATABASE_URL=postgres://postgres:root@postgres-db:5433/supergaming?sslmode=disable
 
   postgres:
     image: postgres:latest
